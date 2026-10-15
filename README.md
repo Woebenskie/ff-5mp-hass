@@ -158,8 +158,8 @@
 
 | Method | Steps |
 |--------|-------|
-| **Via HACS (Recommended)** | 1. Open **HACS** in Home Assistant<br>2. Click on **Integrations**<br>3. Click the **⋮** menu (top right) → **Custom repositories**<br>4. Add repository:<br>&nbsp;&nbsp;&nbsp;• **URL**: `https://github.com/GhostTypes/ff-5mp-hass`<br>&nbsp;&nbsp;&nbsp;• **Category**: `Integration`<br>5. Click **Add**<br>6. Search for "FlashForge" in HACS<br>7. Click **Download**<br>8. **Restart Home Assistant** |
-| **Manual Installation** | 1. Download the [latest release](https://github.com/GhostTypes/ff-5mp-hass/releases)<br>2. Extract the `custom_components/flashforge` folder<br>3. Copy to your Home Assistant `config/custom_components/` directory<br>4. Restart Home Assistant |
+| **Via HACS (Recommended)** | 1. Open **HACS** in Home Assistant<br>2. Click on **Integrations**<br>3. Click the **⋮** menu (top right) → **Custom repositories**<br>4. Add repository:<br>&nbsp;&nbsp;&nbsp;• **URL**: `https://github.com/Woebenskie/ff-5mp-hass`<br>&nbsp;&nbsp;&nbsp;• **Category**: `Integration`<br>5. Click **Add**<br>6. Search for "FlashForge" in HACS<br>7. Click **Download**<br>8. **Restart Home Assistant** |
+| **Manual Installation** | 1. Download the [fork's main branch](https://github.com/Woebenskie/ff-5mp-hass/archive/refs/heads/main.zip)<br>2. Extract the `custom_components/flashforge` folder<br>3. Copy to your Home Assistant `config/custom_components/` directory<br>4. Restart Home Assistant |
 
 </div>
 
