@@ -392,10 +392,12 @@ The card also shows **warnings** that do not block the print. It warns when the 
 ### Material Station dashboard card
 
 The integration also includes a **FlashForge Material Station** dashboard card.
-It shows four spools in the filament colors with the material names below them.
-The slot currently in use has a pulsing green outline. On a Creator 5 or
-Creator 5 Pro, the four slots correspond to the four tool heads. The card shows
-the printer's reported metadata; it does not control filament loading.
+It shows four Bambu-style vector spools in the filament colors with the material
+names below them. The slot currently in use has an accent-colored frame and
+animated filament. On a Creator 5 or Creator 5 Pro, the four slots correspond
+to the four tool heads. The card shows
+the printer's reported metadata; it does not control filament loading. FlashForge
+does not report a spool's remaining percentage, so all loaded spools appear full.
 
 To add it, edit a dashboard, choose **Add card**, search for **FlashForge
 Material Station**, and select your printer in the card editor. Choose the
@@ -408,6 +410,8 @@ header: ''
 subtitle: ''
 style: vector
 show_type: true  # show the filament type below each spool
+spool_anim_wiggle: true
+spool_anim_reflection: true
 ```
 
 After installing or updating the integration, restart Home Assistant and

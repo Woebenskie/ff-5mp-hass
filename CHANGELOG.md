@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.4] - 2026-10-15
+
+### Changed
+
+- Rework the Material Station vector card using the Bambu Lab AMS card's ISC-licensed
+  spool geometry and active filament animations, adapted to FlashForge's four
+  slot entities. The card now honors `spool_anim_wiggle` and
+  `spool_anim_reflection`; see `THIRD_PARTY_NOTICES.md` for attribution.
+- Loaded spools display at a fixed fill height because the FlashForge API does
+  not report a remaining filament percentage.
+
 ## [1.6.3] - 2026-10-15
 
 ### Added

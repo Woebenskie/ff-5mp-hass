@@ -64,7 +64,6 @@
   "station_loading": "Reading the Material Station…",
   "station_no_station": "This printer has no Material Station.",
   "station_empty": "Empty",
-  "station_slot_n": "Slot {slot}",
   "station_active_slot": "Slot {slot} active",
   "station_idle": "Idle",
   "station_offline": "Offline",

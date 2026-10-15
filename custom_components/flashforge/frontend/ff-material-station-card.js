@@ -1,10 +1,9 @@
 /**
  * FlashForge Material Station card.
  *
- * A lookalike of the Bambu Lab AMS card, backed by the FlashForge Material
- * Station: four slots in a row, each drawn as a spool in the filament's color,
- * the slot that currently feeds the print highlighted the way the Bambu card
- * highlights its active spool.
+ * Vector spool presentation adapted from ha-bambulab-cards (ISC license;
+ * see THIRD_PARTY_NOTICES.md). FlashForge supplies the four slot colors,
+ * material names, and active slot.
  *
  * On the Creator 5 series the four slots *are* the four tool heads, so the
  * card reads as "which filament is in which head" - the one thing the printer
@@ -22,7 +21,7 @@
  * registry swap.
  */
 
-const CARD_VERSION = "1.6.3";
+const CARD_VERSION = "1.6.4";
 
 console.info(
   `%c FLASHFORGE-MATERIAL-STATION-CARD %c ${CARD_VERSION} `,
@@ -136,7 +135,7 @@ function pendingTranslator() {
 const STYLES = `
   :host { display: block; }
   ha-card { overflow: hidden; }
-  .station { padding: 10px 0 0; }
+  .station { padding: 5px 0; }
 
   .info-bar {
     display: flex; align-items: center; justify-content: space-between;
@@ -162,61 +161,59 @@ const STYLES = `
     animation: station-pulse 1.6s ease-out infinite;
   }
 
+  /* Vector spool geometry and motion adapted from ha-bambulab-cards. */
   .spools {
-    display: flex; justify-content: center; gap: 8px;
-    padding: 5px 6px 6px;
-    background: var(--secondary-background-color);
-    border-radius: 12px; margin: 0 10px 10px;
+    display: flex; justify-content: center; align-items: stretch;
+    gap: 5px; box-sizing: border-box; width: 100%; padding: 0 5px;
   }
   .spool {
-    flex: 1; max-width: 110px; display: flex; flex-direction: column;
-    align-items: center; gap: 8px; border-radius: 10px;
-    padding: 0;
-    cursor: pointer;
+    flex: 0 1 25%; min-width: 0; max-width: 25%; box-sizing: border-box;
+    display: flex; flex-direction: column; padding: 0 2px; cursor: pointer;
   }
-  .spool:hover { background: color-mix(in srgb, var(--card-background-color) 60%, transparent); }
-  .spool.active .spool-body {
-    outline: 2px solid #05ad42;
-    animation: station-active-pulse 1.6s ease-out infinite;
+  .spool-holder {
+    box-sizing: border-box; min-height: 105px; flex: 1; width: 100%;
+    display: flex; position: relative; overflow: hidden;
+    border: 7px solid #808080; border-radius: 0.6em;
+    background: linear-gradient(#959595, #626262, #959595);
   }
-  .spool-body {
-    width: 100%; aspect-ratio: 1.05; box-sizing: border-box;
-    position: relative; overflow: hidden; border-radius: 8px;
-    border: 6px solid #737376; background: #343437;
-    box-shadow: inset 0 0 0 2px #99999b;
+  .spool.active .spool-holder { border-color: var(--primary-color, #05ad42); }
+  .spool-frame {
+    box-sizing: border-box; display: flex; align-items: stretch;
+    width: 100%; padding: min(15%, 30px) 0;
+    border: 2px solid #5a5a5a; border-radius: 3px;
   }
-  .spool-top {
-    position: absolute; top: 9%; left: 9%; right: 9%; height: 18%;
-    background: #737376; border-radius: 2px;
+  .spool-side { width: 15%; max-width: 30px; background: #3d3d3d; }
+  .roll-wrap {
+    flex: 1; min-width: 0; display: flex; align-items: center;
+    justify-content: center; overflow: hidden;
   }
-  .spool-wind {
-    position: absolute; inset: 24% 12% 16%;
-    background-color: var(--filament-color);
-    background-image: repeating-linear-gradient(90deg,
-      rgba(0,0,0,.42) 0 1px, rgba(255,255,255,.24) 1px 2px,
-      transparent 2px 4px);
+  .spool-roll {
+    position: relative; width: 100%; height: 95%; overflow: hidden;
+    background: var(--filament-color);
   }
-  .spool.empty .spool-wind { background: #69696b; height: 24%; }
-  .spool-core {
-    position: absolute; left: 20%; right: 20%; top: 53%; height: 23%;
-    background: #343437;
+  .spool.empty .spool-roll { height: 20%; background: #3d3d3d; }
+  .spool-roll:not(.empty-roll)::after {
+    content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 2px, rgba(0,0,0,.5) 2px 4px);
   }
-  .spool:not(.empty) .spool-core { display: none; }
-
-  .spool-info {
-    text-align: center; min-width: 54px; max-width: 100%; min-height: 43px;
-    display: flex; align-items: center; justify-content: center;
-    padding: 5px; box-sizing: border-box; border-radius: 7px;
-    background: #474749;
+  .spool.active.wiggle .roll-wrap { animation: station-wiggle 3s linear infinite; }
+  .spool.active.reflection .spool-roll::before {
+    content: ""; position: absolute; inset: -100% 0; z-index: 1;
+    background: linear-gradient(transparent 25%, rgba(255,255,255,.2) 50%, transparent 75%);
+    animation: station-reflection 3s linear infinite;
   }
+  .spool-info { display: flex; justify-content: center; margin-top: 7px; }
   .spool-material {
-    color: #f2f2f3; font-size: 0.78rem; font-weight: 500;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 96px;
+    box-sizing: border-box; display: flex; justify-content: center; align-items: center;
+    min-height: 56px; max-width: 100%; padding: 0 10px;
+    background: #444; border-radius: .5em; color: white;
+    font-size: small; line-height: 1em; text-align: center;
+    overflow-wrap: anywhere;
   }
-  .spool-slot { color: #f2f2f3; font-size: 0.78rem; }
 
   /* Graphic style: flat discs instead of spool rings. */
   .graphic-disc {
+    align-self: center;
     width: 56px; height: 56px; border-radius: 50%;
     border: 3px solid var(--card-background-color, #fff);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
@@ -228,13 +225,15 @@ const STYLES = `
   }
 
   @media (max-width: 420px) {
-    .spools { gap: 2px; padding: 10px 6px; margin: 0 6px 6px; }
+    .spools { gap: 2px; padding: 0 5px; }
     .spool { padding: 0 2px; }
+    .spool-holder { min-height: 85px; border-width: 5px; }
     .graphic-disc { width: 44px; height: 44px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .chip.active .pulse-dot, .spool.active .spool-body { animation: none; }
+    .chip.active .pulse-dot, .spool.active.wiggle .roll-wrap,
+    .spool.active.reflection .spool-roll::before { animation: none; }
   }
 
   .message {
@@ -247,10 +246,14 @@ const STYLES = `
     70% { box-shadow: 0 0 0 7px rgba(5, 173, 66, 0); }
     100% { box-shadow: 0 0 0 0 rgba(5, 173, 66, 0); }
   }
-  @keyframes station-active-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(5, 173, 66, 0.35); }
-    70% { box-shadow: 0 0 0 5px rgba(5, 173, 66, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(5, 173, 66, 0); }
+  @keyframes station-wiggle {
+    0%, 20%, 40%, 60%, 80%, 100% { transform: skew(0, 0); }
+    10%, 50% { transform: skew(2deg, 2deg); }
+    30%, 70% { transform: skew(-2deg, -2deg); }
+  }
+  @keyframes station-reflection {
+    0% { transform: translateY(-50%); }
+    100% { transform: translateY(50%); }
   }
 `;
 
@@ -473,9 +476,9 @@ class FlashForgeMaterialStationCard extends HTMLElement {
     const color = filled ? swatchColor(slot.material_color) : "var(--disabled-text-color)";
     const active = slot.slot_id === this._activeSlot ? " active" : "";
     const emptyCls = filled ? "" : " empty";
-    const label = this._config.show_type !== false || !filled
-      ? material
-      : this._t("station_slot_n", { slot: slot.slot_id });
+    const motion = this._config.style === "graphic" ? "" :
+      `${this._config.spool_anim_wiggle === false ? "" : " wiggle"}` +
+      `${this._config.spool_anim_reflection === false ? "" : " reflection"}`;
 
     let graphic;
     if (this._config.style === "graphic") {
@@ -483,19 +486,21 @@ class FlashForgeMaterialStationCard extends HTMLElement {
         <div class="graphic-disc" style="background: ${esc(color)}"></div>`;
     } else {
       graphic = `
-        <div class="spool-body" style="--filament-color: ${esc(color)}">
-          <div class="spool-top"></div>
-          <div class="spool-wind"></div>
-          <div class="spool-core"></div>
+        <div class="spool-holder" style="--filament-color: ${esc(color)}">
+          <div class="spool-frame">
+            <div class="spool-side"></div>
+            <div class="roll-wrap"><div class="spool-roll${filled ? "" : " empty-roll"}"></div></div>
+            <div class="spool-side"></div>
+          </div>
         </div>`;
     }
 
     return `
-      <div class="spool${active}${emptyCls}" data-slot="${slot.slot_id}">
+      <div class="spool${active}${emptyCls}${motion}" data-slot="${slot.slot_id}">
         ${graphic}
-        <div class="spool-info">
-          <div class="spool-material" title="${esc(label)}">${esc(label)}</div>
-        </div>
+        ${this._config.show_type === false ? "" : `<div class="spool-info">
+          <div class="spool-material" title="${esc(material)}">${esc(material)}</div>
+        </div>`}
       </div>`;
   }
 
