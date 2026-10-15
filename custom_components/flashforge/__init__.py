@@ -25,6 +25,7 @@ from .const import (
 )
 from .coordinator import FlashForgeDataUpdateCoordinator
 from .card import async_register_frontend
+from .service import async_register_services
 from .util import async_close_flashforge_client
 from .websocket import async_register_websocket_commands
 
@@ -53,6 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # exist in the picker and dashboards using it showed "custom element
     # doesn't exist" until the printer came back.
     async_register_websocket_commands(hass)
+    async_register_services(hass)
     integration = await async_get_integration(hass, DOMAIN)
     await async_register_frontend(hass, str(integration.version))
 

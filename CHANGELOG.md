@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-10-15
+
+### Added
+
+- Add the `flashforge.set_slot_filament` Home Assistant action for AD5X and
+  Creator 5 / Creator 5 Pro. Select a printer, slot (1–4), material type and
+  color in the action form, or provide `#RRGGBB` in a script. The action updates
+  the printer's slot metadata over HTTP and refreshes the entities afterwards.
+  On Creator 5 models, the API library maps the selected color to the nearest
+  firmware palette color. Filament is not physically loaded by this action.
+
+### Testing
+
+- Unit-tested service validation, target resolution, RGB conversion and printer
+  refusal. Physical printer behavior still needs hardware confirmation.
+
 ## [1.6.1] - 2026-09-27
 
 ### Fixed

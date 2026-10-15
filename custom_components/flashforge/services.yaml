@@ -1,0 +1,38 @@
+# Services for the FlashForge 3D Printer integration.
+set_slot_filament:
+  name: Set slot filament
+  description: >-
+    Set the material name and color shown for a Material Station slot. On the
+    Creator 5 series the slots are the four tool heads. This sets the metadata
+    the printer displays and validates prints against; it does not load
+    filament. Available on the AD5X and Creator 5 series.
+  target:
+    entity:
+      integration: flashforge
+    device:
+      integration: flashforge
+  fields:
+    slot:
+      name: Slot
+      description: The slot to configure, 1 to 4.
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 4
+          mode: box
+    material:
+      name: Material
+      description: The material type, e.g. PLA, PETG or ABS.
+      required: true
+      example: PLA
+      selector:
+        text:
+    color:
+      name: Color
+      description: >-
+        Pick a filament color. On the Creator 5 series it is mapped to the
+        nearest supported printer color.
+      required: true
+      selector:
+        color_rgb:

@@ -389,6 +389,28 @@ The card also shows **warnings** that do not block the print. It warns when the 
 >
 > **Why the Creator 5 series has no file list:** its firmware does not report which tools a stored file uses. Without that, the card cannot match tools to slots. If a print started without a mapping, each tool would print from the slot with the slicer's filament number, whatever is loaded there. An upload solves this: Home Assistant reads the tools from the 3MF itself before the file reaches the printer. The Material Station slot entities still work, because they come from a different endpoint.
 
+### Set the Material Station filament type and color
+
+On an AD5X, Creator 5 or Creator 5 Pro, open **Developer Tools → Actions** and
+choose **FlashForge 3D Printer: Set slot filament**. Select the printer device
+or one of its entities, choose slot 1–4, enter the material type (for example
+`PLA` or `PETG`), and pick a color. The slot swatch entities refresh after the
+printer accepts the change. This sets the printer's slot metadata; it does not
+physically load filament. On Creator 5 models, the API library maps the chosen
+color to the nearest supported firmware color.
+
+Scripts and automations can also pass a hex color directly:
+
+```yaml
+action: flashforge.set_slot_filament
+target:
+  entity_id: image.creator_5_pro_material_station_slot_2
+data:
+  slot: 2
+  material: PETG
+  color: "#4CAAF8"
+```
+
 <div align="center">
   <h2>Languages</h2>
 </div>

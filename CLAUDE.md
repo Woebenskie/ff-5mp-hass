@@ -3,7 +3,7 @@
 Guidance for AI coding assistants working in this repository.
 
 ## Current State (September 2026)
-- Integration **version 1.6.1** (CHANGELOG dated 2026-09-27). Previous published release: 1.6.0 (2026-09-27). Releases fire on a `v*` tag push — `.github/workflows/release.yml` extracts the matching `## [X.Y.Z]` CHANGELOG section for the notes, so the section must exist before the tag is pushed.
+- Integration **version 1.6.2** (CHANGELOG dated 2026-10-15). Previous published release: 1.6.1 (2026-09-27). Releases fire on a `v*` tag push — `.github/workflows/release.yml` extracts the matching `## [X.Y.Z]` CHANGELOG section for the notes, so the section must exist before the tag is pushed.
 - **1.6.0 adds the 3MF upload (`upload.py`), and it is NOT yet tested on real hardware.** A Creator 5 owner will test it. Treat the per-model upload dispatch as unconfirmed until that report arrives.
 - Ships a **Lovelace card** (`frontend/ff-job-card.js`) for starting prints with material matching — from the printer's recent-file list, or from a sliced 3MF the user uploads. Served and registered by the integration itself — no separate HACS entry, no Lovelace resource step.
 - **Languages: English + German**, for the integration (`translations/`) and independently for the card (`frontend/translations/`). Both follow the user's HA profile language. German contributed by @RedAces in PR #19.
