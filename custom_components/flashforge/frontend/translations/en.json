@@ -58,5 +58,21 @@
   "upload_progress": "Uploading… {percent}%",
   "upload_processing": "Reading the file…",
   "sending": "Sending to the printer…",
-  "warn_model_mismatch": "This file was sliced for {model}, not for this printer. Check it before you start."
+  "warn_model_mismatch": "This file was sliced for {model}, not for this printer. Check it before you start.",
+  "station_default_title": "Material Station",
+  "station_no_printer": "No printer configured. Edit this card and pick a FlashForge printer.",
+  "station_loading": "Reading the Material Station…",
+  "station_no_station": "This printer has no Material Station.",
+  "station_empty": "Empty",
+  "station_slot_n": "Slot {slot}",
+  "station_active_slot": "Slot {slot} active",
+  "station_idle": "Idle",
+  "station_offline": "Offline",
+  "station_editor_printer": "Printer",
+  "station_editor_select": "Select a printer…",
+  "station_editor_title": "Card title (optional)",
+  "station_editor_style": "Style",
+  "station_editor_style_vector": "Vector",
+  "station_editor_style_graphic": "Graphic",
+  "station_editor_show_type": "Show filament types"
 }

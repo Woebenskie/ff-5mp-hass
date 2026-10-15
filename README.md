@@ -389,7 +389,31 @@ The card also shows **warnings** that do not block the print. It warns when the 
 >
 > **Why the Creator 5 series has no file list:** its firmware does not report which tools a stored file uses. Without that, the card cannot match tools to slots. If a print started without a mapping, each tool would print from the slot with the slicer's filament number, whatever is loaded there. An upload solves this: Home Assistant reads the tools from the 3MF itself before the file reaches the printer. The Material Station slot entities still work, because they come from a different endpoint.
 
-### Set the Material Station filament type and color
+### Material Station dashboard card
+
+The integration also includes a **FlashForge Material Station** dashboard card.
+It shows four spools in the filament colors with the material names below them.
+The slot currently in use has a pulsing green outline. On a Creator 5 or
+Creator 5 Pro, the four slots correspond to the four tool heads. The card shows
+the printer's reported metadata; it does not control filament loading.
+
+To add it, edit a dashboard, choose **Add card**, search for **FlashForge
+Material Station**, and select your printer in the card editor. Choose the
+**Vector** spool style or **Graphic** disc style. You can also add it in YAML:
+
+```yaml
+type: custom:ff-material-station-card
+entry_id: YOUR_FLASHFORGE_CONFIG_ENTRY_ID
+header: ''
+subtitle: ''
+style: vector
+show_type: true  # show the filament type below each spool
+```
+
+After installing or updating the integration, restart Home Assistant and
+reload the dashboard page once so the new card appears in the picker.
+
+### Change a slot's material and color
 
 On an AD5X, Creator 5 or Creator 5 Pro, open **Developer Tools → Actions** and
 choose **FlashForge 3D Printer: Set slot filament**. Select the printer device

@@ -4,11 +4,11 @@ Working agreement for AI assistants contributing to `ff-5mp-hass`.
 
 ## Project Snapshot
 - **Integration:** FlashForge printers for Home Assistant (HTTP API only).
-- **Current version:** `1.6.2` (CHANGELOG dated 2026-10-15). Previous published release: `v1.6.1` (2026-09-27). The 1.6.0 3MF upload and the 1.6.2 slot-configuration action are **not yet tested on real hardware**.
+- **Current version:** `1.6.3` (CHANGELOG dated 2026-10-15). The 1.6.0 3MF upload, 1.6.2 slot-configuration action, and 1.6.3 Material Station card are **not yet tested on real hardware**.
 - **Supported printers:** `AD5X`, `Adventurer 5M`, `Adventurer 5M Pro`, `Creator 5`, and `Creator 5 Pro` only.
 - **Entities shipped:** 56 total (38 sensors, 5 binary sensors, 2 switches (the camera switch is not created on the Creator 5 series), 1 select, 4 buttons, 1 camera, 5 images — the g-code thumbnail plus 4 Material Station slot color swatches).
 - **Key dependency:** `flashforge-python-api>=1.6.0` (see sibling repo `ff-5mp-api-py`). The 1.6.0 floor is load-bearing: it adds the 3MF reader (`flashforge.threemf.parse_3mf`) the upload uses, and it makes uploads open files off the event loop and stop hitting aiohttp's 5-minute total timeout — see `CLAUDE.md`.
-- **Also shipped:** a Lovelace card (`frontend/ff-job-card.js`) for browsing the printer's files, uploading a sliced 3MF, matching materials, and starting prints, served and registered by the integration itself. It is backed by seven websocket commands (`websocket.py`, `job.py`, `upload.py`: `entries`, `files/list`, `file/thumbnail`, `job/prepare`, `job/start`, `upload/start`, `upload/discard`) and one authenticated HTTP endpoint, `POST /api/flashforge/upload` (`upload.py`).
+- **Also shipped:** two Lovelace cards, served by the integration: `ff-job-card.js` for print jobs and `ff-material-station-card.js` for four colored slots and an animated active-slot marker. Eight websocket commands (`websocket.py`, `job.py`, `upload.py`) back the cards, including `flashforge/station`; the job card also uses the authenticated `POST /api/flashforge/upload` endpoint. The `flashforge.set_slot_filament` action in `service.py` writes slot material and color metadata.
 - **Languages:** English and German, for both the integration (`translations/`) and the card (`frontend/translations/`). German contributed by @RedAces.
 - **Primary references:** `CLAUDE.md` (agent workflow), `AGENTS.md` (this playbook), `README.md` (user docs), `CHANGELOG.md`, `homeassistant/README.md`, `HOME_ASSISTANT_DOCS_COMPANION.md`, and `HACS_PUBLISHER_COMPANION.md`.
 

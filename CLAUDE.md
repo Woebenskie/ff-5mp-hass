@@ -2,10 +2,10 @@
 
 Guidance for AI coding assistants working in this repository.
 
-## Current State (September 2026)
-- Integration **version 1.6.2** (CHANGELOG dated 2026-10-15). Previous published release: 1.6.1 (2026-09-27). Releases fire on a `v*` tag push — `.github/workflows/release.yml` extracts the matching `## [X.Y.Z]` CHANGELOG section for the notes, so the section must exist before the tag is pushed.
+## Current State (October 2026)
+- Integration **version 1.6.3** (CHANGELOG dated 2026-10-15). The fork's previous commit was version 1.6.2 (2026-10-15). Releases fire on a `v*` tag push — `.github/workflows/release.yml` extracts the matching `## [X.Y.Z]` CHANGELOG section for the notes, so the section must exist before the tag is pushed.
 - **1.6.0 adds the 3MF upload (`upload.py`), and it is NOT yet tested on real hardware.** A Creator 5 owner will test it. Treat the per-model upload dispatch as unconfirmed until that report arrives.
-- Ships a **Lovelace card** (`frontend/ff-job-card.js`) for starting prints with material matching — from the printer's recent-file list, or from a sliced 3MF the user uploads. Served and registered by the integration itself — no separate HACS entry, no Lovelace resource step.
+- Ships two **Lovelace cards**: `frontend/ff-job-card.js` for starting prints with material matching, and `frontend/ff-material-station-card.js` for four colored slots with an animated active-slot marker. Both are served and registered by the integration itself — no separate HACS entry or Lovelace resource step. The `flashforge.set_slot_filament` action changes slot material and color metadata over HTTP.
 - **Languages: English + German**, for the integration (`translations/`) and independently for the card (`frontend/translations/`). Both follow the user's HA profile language. German contributed by @RedAces in PR #19.
 - Provides a complete Home Assistant experience for FlashForge printers using the **HTTP API only**.
 - Entities shipped: **56 total** (38 sensors, 5 binary sensors, 2 switches, 4 buttons, 1 select, 1 MJPEG camera, 5 images — the g-code thumbnail plus 4 Material Station slot color swatches).

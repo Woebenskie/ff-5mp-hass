@@ -285,8 +285,8 @@
   },
   "notifications": {
     "card_reload": {
-      "title": "Die FlashForge-Druckauftragskarte ist bereit",
-      "message": "Die Karte „FlashForge Print Job“ wurde soeben installiert oder aktualisiert. Lade diese Seite neu (Strg+R, auf dem Mac Cmd+R), damit sie geladen wird – bis dahin erscheint die Karte nicht in der Kartenauswahl und Dashboards, die sie bereits verwenden, zeigen einen Fehler. Das ist nur einmal pro Update nötig."
+      "title": "Die FlashForge-Karten sind bereit",
+      "message": "Die FlashForge-Karten wurden soeben installiert oder aktualisiert. Lade diese Seite neu (Strg+R, auf dem Mac Cmd+R), damit sie geladen werden – bis dahin erscheinen sie nicht in der Kartenauswahl und bestehende Dashboards zeigen möglicherweise einen Fehler. Das ist nur einmal pro Update nötig."
     }
   }
 }

@@ -8,7 +8,7 @@ multi-material print anyway.
 """
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -18,6 +18,7 @@ sys.path.insert(0, str(project_root))
 
 # Mock Home Assistant modules before importing integration code
 from tests.ha_mocks import mock_homeassistant
+
 mock_homeassistant()
 
 from flashforge.models import FFGcodeFileEntry, FFGcodeToolData
@@ -29,6 +30,7 @@ from custom_components.flashforge.websocket import (
     ws_list_files,
     ws_prepare_job,
     ws_start_job,
+    ws_station,
 )
 
 ENTRY_ID = "entry-1"
@@ -45,6 +47,8 @@ def make_machine_info(
     machine_info.machine_state = Mock(value="ready")
     machine_info.is_creator5 = is_creator5
     machine_info.is_creator5_pro = is_creator5_pro
+    machine_info.has_matl_station = bool(slots)
+    machine_info.matl_station_info.current_slot = 0
     machine_info.matl_station_info.slot_infos = [
         Mock(
             slot_id=slot_id,
@@ -94,6 +98,7 @@ def make_hass(*, files=None, machine_info=None, thumbnail=b"png-bytes"):
     coordinator = Mock()
     coordinator.data = machine_info if machine_info is not None else make_machine_info()
     coordinator.device_model = "AD5X"
+    coordinator.last_update_success = True
     coordinator.async_request_refresh = AsyncMock()
 
     hass = Mock()
@@ -197,6 +202,129 @@ class TestListFiles:
         await ws_list_files(hass, connection, {"id": 1, "entry_id": ENTRY_ID})
 
         assert connection.send_error.call_args.args[1] == "printer_error"
+
+
+@pytest.mark.unit
+class TestStation:
+    """The Material Station card's bootstrap command."""
+
+    def _registry_mock(self):
+        """An entity registry that resolves the known unique-id patterns."""
+        registry = Mock()
+
+        def entity_id(platform, domain, unique):
+            if unique == f"{ENTRY_ID}_active_ifs_slot":
+                return "sensor.workshop_ad5x_active_material_station_slot"
+            if unique == f"{ENTRY_ID}_is_online":
+                return "binary_sensor.workshop_ad5x_online"
+            return (
+                f"image.workshop_ad5x_material_station_slot_"
+                f"{unique.rsplit('_', 1)[-1]}"
+            )
+
+        registry.async_get_entity_id.side_effect = entity_id
+        return registry
+
+    def test_returns_slots_and_entity_ids(self):
+        """The snapshot and the entities the card should track from then on."""
+        hass, _, _ = make_hass()
+        connection = make_connection()
+
+        with patch("custom_components.flashforge.websocket.er") as er_mock:
+            er_mock.async_get.return_value = self._registry_mock()
+            ws_station(hass, connection, {"id": 1, "entry_id": ENTRY_ID})
+
+        payload = result_of(connection)
+        assert payload["printer_name"] == "Workshop AD5X"
+        assert payload["model"] == "AD5X"
+        assert payload["has_material_station"] is True
+        assert payload["online"] is True
+        assert payload["active_slot"] == 0
+        assert payload["slots"] == [
+            {
+                "slot_id": 1,
+                "is_empty": False,
+                "material_name": "PLA",
+                "material_color": "#FF0000",
+            },
+            {
+                "slot_id": 2,
+                "is_empty": False,
+                "material_name": "PETG",
+                "material_color": "#000000",
+            },
+        ]
+        assert payload["entity_ids"]["slot_1"] == (
+            "image.workshop_ad5x_material_station_slot_1"
+        )
+        assert payload["entity_ids"]["slot_4"] == (
+            "image.workshop_ad5x_material_station_slot_4"
+        )
+        assert payload["entity_ids"]["active"] == (
+            "sensor.workshop_ad5x_active_material_station_slot"
+        )
+        assert payload["entity_ids"]["online"] == "binary_sensor.workshop_ad5x_online"
+
+    def test_reports_offline_when_coordinator_update_failed(self):
+        hass, _, coordinator = make_hass()
+        coordinator.last_update_success = False
+        connection = make_connection()
+
+        with patch("custom_components.flashforge.websocket.er") as er_mock:
+            er_mock.async_get.return_value = self._registry_mock()
+            ws_station(hass, connection, {"id": 1, "entry_id": ENTRY_ID})
+
+        assert result_of(connection)["online"] is False
+
+    def test_reports_the_active_slot(self):
+        """The slot the printer is currently pulling from, 0 when idle."""
+        machine_info = make_machine_info()
+        machine_info.matl_station_info.current_slot = 3
+        hass, _, _ = make_hass(machine_info=machine_info)
+        connection = make_connection()
+
+        with patch("custom_components.flashforge.websocket.er") as er_mock:
+            er_mock.async_get.return_value = self._registry_mock()
+            ws_station(hass, connection, {"id": 1, "entry_id": ENTRY_ID})
+
+        assert result_of(connection)["active_slot"] == 3
+
+    def test_printer_without_station_reports_none(self):
+        """A printer without a Material Station gets an explicit answer."""
+        hass, _, _ = make_hass(machine_info=make_machine_info(slots=()))
+        connection = make_connection()
+
+        with patch("custom_components.flashforge.websocket.er") as er_mock:
+            er_mock.async_get.return_value = self._registry_mock()
+            ws_station(hass, connection, {"id": 1, "entry_id": ENTRY_ID})
+
+        payload = result_of(connection)
+        assert payload["has_material_station"] is False
+        assert payload["slots"] == []
+
+    def test_station_capability_is_kept_when_slots_are_temporarily_empty(self):
+        """The card should still show four empty places while slots load."""
+        machine_info = make_machine_info(slots=())
+        machine_info.has_matl_station = True
+        hass, _, _ = make_hass(machine_info=machine_info)
+        connection = make_connection()
+
+        with patch("custom_components.flashforge.websocket.er") as er_mock:
+            er_mock.async_get.return_value = self._registry_mock()
+            ws_station(hass, connection, {"id": 1, "entry_id": ENTRY_ID})
+
+        payload = result_of(connection)
+        assert payload["has_material_station"] is True
+        assert payload["slots"] == []
+
+    def test_unknown_entry_errors(self):
+        hass, _, _ = make_hass()
+        connection = make_connection()
+
+        ws_station(hass, connection, {"id": 1, "entry_id": "nope"})
+
+        connection.send_error.assert_called_once()
+        assert connection.send_error.call_args.args[1] == "entry_not_found"
 
 
 @pytest.mark.unit

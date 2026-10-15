@@ -19,27 +19,38 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+
 COMPONENT = Path(__file__).parents[2] / "custom_components" / "flashforge"
 
+CARD_FILES = [
+    COMPONENT / "frontend" / "ff-job-card.js",
+    COMPONENT / "frontend" / "ff-material-station-card.js",
+]
 
-def test_card_version_matches_manifest() -> None:
+CARD_IDS = ["job", "material-station"]
+
+
+@pytest.mark.parametrize("source", CARD_FILES, ids=CARD_IDS)
+def test_card_version_matches_manifest(source: Path) -> None:
     manifest = json.loads((COMPONENT / "manifest.json").read_text(encoding="utf-8"))
-    source = (COMPONENT / "frontend" / "ff-job-card.js").read_text(encoding="utf-8")
+    text = source.read_text(encoding="utf-8")
 
-    match = re.search(r"""const CARD_VERSION = ["']([^"']+)["']""", source)
-    assert match, "CARD_VERSION is not declared in ff-job-card.js"
+    match = re.search(r"""const CARD_VERSION = ["']([^"']+)["']""", text)
+    assert match, f"CARD_VERSION is not declared in {source.name}"
 
     assert match.group(1) == manifest["version"], (
-        "CARD_VERSION and manifest.json version disagree; bump both or the "
-        "card's translations will be served from a stale browser cache"
+        f"{source.name}: CARD_VERSION and manifest.json version disagree; bump "
+        "both or the card's translations will be served from a stale browser cache"
     )
 
 
-def test_translations_are_cache_busted() -> None:
+@pytest.mark.parametrize("source", CARD_FILES, ids=CARD_IDS)
+def test_translations_are_cache_busted(source: Path) -> None:
     """The translation fetch must carry the version, or it is cached forever.
 
     `card.py` serves `frontend/` with long-lived cache headers, which is only
     safe because every URL under it carries a version that a release changes.
     """
-    source = (COMPONENT / "frontend" / "ff-job-card.js").read_text(encoding="utf-8")
-    assert "?v=${CARD_VERSION}" in source
+    text = source.read_text(encoding="utf-8")
+    assert "?v=${CARD_VERSION}" in text

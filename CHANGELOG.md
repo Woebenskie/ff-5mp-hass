@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-10-15
+
+### Added
+
+- Add a FlashForge Material Station dashboard card with four filament spools,
+  their colors and material types, and a pulsing marker on the active slot.
+  It reads the printer's slot entities and follows Home Assistant state updates.
+  The card is bundled with the integration and appears in the dashboard card
+  picker after a Home Assistant restart and page reload. It supports AD5X and
+  Creator 5 / Creator 5 Pro printers that report a Material Station.
+
+### Testing
+
+- Unit tests cover the station websocket snapshot, entity lookup, capability
+  reporting, card registration and translation versioning. Visual behavior
+  still needs confirmation in a real Home Assistant dashboard.
+
 ## [1.6.2] - 2026-10-15
 
 ### Added

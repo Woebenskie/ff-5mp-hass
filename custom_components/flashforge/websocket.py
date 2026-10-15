@@ -8,6 +8,7 @@ is only interesting while the card is open, it carries per-file metadata far too
 large for entity attributes, and thumbnails are not expressible as state at all.
 
     flashforge/files/list      list the files on the printer, plus the slots
+    flashforge/station         Material Station state plus its entity ids
     flashforge/file/thumbnail  one file's thumbnail, base64 PNG
     flashforge/job/prepare     what starting this file would involve
     flashforge/job/start       start it
@@ -30,10 +31,10 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
 from .coordinator import FlashForgeDataUpdateCoordinator
@@ -83,6 +84,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
 
     websocket_api.async_register_command(hass, ws_list_entries)
     websocket_api.async_register_command(hass, ws_list_files)
+    websocket_api.async_register_command(hass, ws_station)
     websocket_api.async_register_command(hass, ws_file_thumbnail)
     websocket_api.async_register_command(hass, ws_prepare_job)
     websocket_api.async_register_command(hass, ws_start_job)
@@ -175,6 +177,74 @@ async def ws_list_files(
             # Advisory only - the printer is the one that refuses a print while
             # it is busy, and it is better at knowing than we are.
             "machine_state": getattr(machine_state, "value", None),
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "flashforge/station",
+        vol.Required("entry_id"): str,
+    }
+)
+@callback
+def ws_station(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return the Material Station state plus the entities that carry it live.
+
+    The Material Station card bootstraps from this snapshot, then tracks the
+    entities it names so its data is the coordinator's data, never a copy the
+    card refreshes by polling. The entity ids come from the entity registry,
+    resolved from the unique ids the platforms assign - not derived from the
+    printer's name, which the user can rename and would silently orphan.
+    """
+    data = _entry_data(hass, msg["entry_id"])
+    if data is None:
+        connection.send_error(
+            msg["id"], ERR_ENTRY_NOT_FOUND, "That FlashForge printer is not set up."
+        )
+        return
+
+    coordinator: FlashForgeDataUpdateCoordinator = data["coordinator"]
+    entry_id: str = msg["entry_id"]
+
+    machine_info = coordinator.data
+    slots = slots_to_list(machine_info) if machine_info is not None else []
+    station = getattr(machine_info, "matl_station_info", None)
+    active_slot = getattr(station, "current_slot", 0) or 0
+
+    registry = er.async_get(hass)
+    entity_ids: dict[str, str | None] = {
+        "active": registry.async_get_entity_id(
+            "sensor", DOMAIN, f"{entry_id}_active_ifs_slot"
+        ),
+        "online": registry.async_get_entity_id(
+            "binary_sensor", DOMAIN, f"{entry_id}_is_online"
+        ),
+    }
+    for slot_id in range(1, 5):
+        entity_ids[f"slot_{slot_id}"] = registry.async_get_entity_id(
+            "image", DOMAIN, f"{entry_id}_ifs_slot_{slot_id}"
+        )
+
+    connection.send_result(
+        msg["id"],
+        {
+            "printer_name": data["name"],
+            "model": coordinator.device_model,
+            "slots": slots,
+            "active_slot": active_slot,
+            "online": bool(coordinator.last_update_success),
+            "has_material_station": bool(
+                getattr(machine_info, "has_matl_station", False) or slots
+            ),
+            # None while the platform has not created the entity yet (a
+            # capability reported after setup); the card then re-asks until it
+            # can track live state.
+            "entity_ids": entity_ids,
         },
     )
 
@@ -367,7 +437,7 @@ async def ws_start_job(
     except HomeAssistantError as err:
         connection.send_error(msg["id"], ERR_PRINTER, str(err))
         return
-    except Exception as err:  # noqa: BLE001 - upstream may raise broad exceptions
+    except Exception as err:
         _LOGGER.exception("Unexpected error starting %s", file_name)
         connection.send_error(msg["id"], ERR_PRINTER, str(err))
         return

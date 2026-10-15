@@ -1,19 +1,19 @@
-"""Serving and registering the FlashForge job card.
+"""Serving and registering the FlashForge cards.
 
 Named `card.py`, not `frontend.py`: a `frontend.py` module sitting beside the
 `frontend/` directory that holds the JS resolves by import-machinery precedence
 rather than by intent, and reads as a typo besides.
 
-The card ships inside the integration rather than as a separate HACS frontend
+The cards ship inside the integration rather than as a separate HACS frontend
 repository, so installing the integration is the only step: the JS is served
-from this package and registered as an extra frontend module at setup. Users
-still add the card to a dashboard themselves - registration makes it *available*,
+from this package and registered as extra frontend modules at setup. Users
+still add a card to a dashboard themselves - registration makes it *available*,
 it does not place it anywhere.
 
 Registration is global and idempotent per Home Assistant run: the static path and
-the module URL are shared by every config entry, so the second printer must not
+the module URLs are shared by every config entry, so the second printer must not
 register them again (Home Assistant raises on a duplicate static path, and a
-duplicate URL would load the card twice).
+duplicate URL would load a card twice).
 """
 from __future__ import annotations
 
@@ -32,6 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 
 URL_BASE = f"/{DOMAIN}_frontend"
 CARD_FILENAME = "ff-job-card.js"
+STATION_CARD_FILENAME = "ff-material-station-card.js"
 
 _REGISTERED_KEY = f"{DOMAIN}_frontend_registered"
 
@@ -86,7 +87,10 @@ async def async_register_frontend(hass: HomeAssistant, version: str) -> None:
     )
 
     frontend.add_extra_js_url(hass, f"{URL_BASE}/{CARD_FILENAME}?v={version}")
-    _LOGGER.debug("Registered the FlashForge job card (version %s)", version)
+    frontend.add_extra_js_url(
+        hass, f"{URL_BASE}/{STATION_CARD_FILENAME}?v={version}"
+    )
+    _LOGGER.debug("Registered the FlashForge cards (version %s)", version)
 
     await _async_notify_if_reload_needed(hass, version)
 
@@ -130,12 +134,12 @@ async def _async_notify_if_reload_needed(hass: HomeAssistant, version: str) -> N
         hass, hass.config.language, "notifications", {DOMAIN}
     )
     prefix = f"component.{DOMAIN}.notifications.card_reload."
-    title = translations.get(f"{prefix}title") or "FlashForge job card is ready"
+    title = translations.get(f"{prefix}title") or "FlashForge cards are ready"
     message = translations.get(f"{prefix}message") or (
-        "The FlashForge Print Job card was just installed or updated. Reload this "
-        "page (Ctrl+R, or Cmd+R on a Mac) to pick it up - until you do, the card "
-        "will not appear in the card picker and dashboards already using it will "
-        "show an error. This is only needed once per update."
+        "The FlashForge cards were just installed or updated. Reload this "
+        "page (Ctrl+R, or Cmd+R on a Mac) to pick them up - until you do, they "
+        "will not appear in the card picker and dashboards already using them "
+        "will show an error. This is only needed once per update."
     )
 
     persistent_notification.async_create(

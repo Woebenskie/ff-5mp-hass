@@ -135,20 +135,35 @@ def test_card_plural_forms_are_complete(path: Path) -> None:
 
 
 def test_card_strings_are_all_used() -> None:
-    """Every key in the card's en.json is referenced by the card.
+    """Every key in the card's en.json is referenced by the card that owns it.
 
     Cheap protection against copy that outlives the UI it belonged to, and
     against a key renamed in the JS but not in the JSON - which renders empty
-    rather than failing.
+    rather than failing. Keys are namespaced per card: ``station_`` keys belong
+    to ff-material-station-card.js, everything else to ff-job-card.js.
     """
-    source = (COMPONENT / "frontend" / "ff-job-card.js").read_text(encoding="utf-8")
+    sources = {
+        "job": (COMPONENT / "frontend" / "ff-job-card.js").read_text(encoding="utf-8"),
+        "station": (
+            COMPONENT / "frontend" / "ff-material-station-card.js"
+        ).read_text(encoding="utf-8"),
+    }
 
-    used = set(re.findall(r"""_t(?:\.plural)?\(\s*["'](\w+)["']""", source))
-    # Keys picked by a conditional inside the call, as in
-    # `_t(this._starting ? "starting" : "start")`.
-    for first, second in re.findall(r"""\?\s*["'](\w+)["']\s*:\s*["'](\w+)["']""", source):
-        used.update({first, second})
+    used = {name: set() for name in sources}
+    for name, source in sources.items():
+        used[name].update(
+            re.findall(r"""_t(?:\.plural)?\(\s*["'](\w+)["']""", source)
+        )
+        # Keys picked by a conditional inside the call, as in
+        # `_t(this._starting ? "starting" : "start")`.
+        for first, second in re.findall(
+            r"""\?\s*["'](\w+)["']\s*:\s*["'](\w+)["']""", source
+        ):
+            used[name].update({first, second})
 
     for key in _load(CARD_TRANSLATIONS / "en.json"):
         base = re.sub(r"_(one|other)$", "", key)
-        assert base in used or key in used, f"{key} is not used by the card"
+        owner = "station" if base.startswith("station_") else "job"
+        assert base in used[owner] or key in used[owner], (
+            f"{key} is not used by its card ({owner})"
+        )

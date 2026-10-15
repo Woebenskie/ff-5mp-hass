@@ -26,60 +26,65 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-CARD = (
+import pytest
+
+FRONTEND = (
     Path(__file__).parents[2]
     / "custom_components"
     / "flashforge"
     / "frontend"
-    / "ff-job-card.js"
 )
 
+CARD_FILES = [FRONTEND / "ff-job-card.js", FRONTEND / "ff-material-station-card.js"]
+CARD_IDS = ["job", "material-station"]
 
-def _source() -> str:
-    return CARD.read_text(encoding="utf-8")
 
-
-def test_no_unguarded_top_level_define() -> None:
+@pytest.mark.parametrize("card", CARD_FILES, ids=CARD_IDS)
+def test_no_unguarded_top_level_define(card: Path) -> None:
     """A bare `customElements.define(...)` at module scope is the bug itself.
 
     It runs once, before the frontend swaps the registry, and has no second
     chance. Registration has to go through the guarded helper.
     """
-    unguarded = re.findall(r"^customElements\.define\(", _source(), re.MULTILINE)
+    unguarded = re.findall(r"^customElements\.define\(", card.read_text(encoding="utf-8"), re.MULTILINE)
     assert not unguarded, (
-        "ff-job-card.js defines a custom element at module scope. That runs "
+        f"{card.name} defines a custom element at module scope. That runs "
         "before Home Assistant installs its own registry, so the definition is "
         "lost; use the guarded helper instead."
     )
 
 
-def test_registration_is_repeated_when_the_registry_is_exchanged() -> None:
+@pytest.mark.parametrize("card", CARD_FILES, ids=CARD_IDS)
+def test_registration_is_repeated_when_the_registry_is_exchanged(card: Path) -> None:
     """The definition must be re-applied to the registry the frontend installs."""
-    source = _source()
+    source = card.read_text(encoding="utf-8")
 
     assert "initialRegistry" in source, (
-        "the card no longer remembers which registry it registered into, so it "
-        "cannot notice the frontend exchanging it"
+        f"{card.name} no longer remembers which registry it registered into, "
+        "so it cannot notice the frontend exchanging it"
     )
     assert "window.customElements !== initialRegistry" in source, (
-        "the card no longer re-registers after the frontend swaps the registry"
+        f"{card.name} no longer re-registers after the frontend swaps the registry"
     )
 
 
-def test_registration_is_idempotent() -> None:
+@pytest.mark.parametrize("card", CARD_FILES, ids=CARD_IDS)
+def test_registration_is_idempotent(card: Path) -> None:
     """Re-registering must not double-define.
 
     The watcher can fire on a page where nothing was ever swapped, and the module
     is evaluated twice when someone also adds it as a Lovelace resource.
     """
-    source = _source()
+    source = card.read_text(encoding="utf-8")
     assert "if (customElements.get(name)) return;" in source, (
-        "defineOnce no longer checks whether the element is already registered"
+        f"{card.name}: defineOnce no longer checks whether the element is "
+        "already registered"
     )
 
 
-def test_the_registry_watch_gives_up() -> None:
+@pytest.mark.parametrize("card", CARD_FILES, ids=CARD_IDS)
+def test_the_registry_watch_gives_up(card: Path) -> None:
     """A page that never swaps must not be left with a polling timer forever."""
-    source = _source()
+    source = card.read_text(encoding="utf-8")
     assert "clearInterval(registryWatch)" in source
     assert "REGISTRY_TIMEOUT_MS" in source
