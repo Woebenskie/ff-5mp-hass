@@ -407,6 +407,12 @@ to the four tool heads. The card shows
 the printer's reported metadata; it does not control filament loading. FlashForge
 does not report a spool's remaining percentage, so all loaded spools appear full.
 
+Click a spool to edit its filament type and color. Choose a common type from
+the dropdown, or choose **Other** to enter a custom type, then pick a color and
+press **Save**. This calls the same `flashforge.set_slot_filament` action shown
+below; it updates the printer's slot metadata, not the physical filament. The
+card displays the values reported by the printer after the next refresh.
+
 To add it, edit a dashboard, choose **Add card**, search for **FlashForge
 Material Station**, and select your printer in the card editor. Choose the
 **Vector** spool style or **Graphic** disc style. You can also add it in YAML:

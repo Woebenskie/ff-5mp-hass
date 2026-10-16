@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.6] - 2026-10-16
+
+### Added
+
+- Clicking a spool in the Material Station card now opens an editor with a
+  filament-type dropdown, a custom-type option, and a color picker. Saving
+  calls the existing `flashforge.set_slot_filament` action for that slot and
+  waits for the printer's entity state to report the result. The editor shows
+  action errors and works in both vector and graphic card styles.
+
+### Testing
+
+- Unit tests cover the service write path and translation/version consistency.
+  The editor still needs confirmation with a real printer and Home Assistant
+  dashboard.
+
 ## [1.6.5] - 2026-10-16
 
 ### Added

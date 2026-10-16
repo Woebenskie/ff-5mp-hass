@@ -4,7 +4,7 @@
  * controls are Home Assistant entities resolved by flashforge/status.
  */
 
-const CARD_VERSION = "1.6.5";
+const CARD_VERSION = "1.6.6";
 const TRANSLATION_BASE = "/flashforge_frontend/translations";
 const RETRY_DELAYS = [500, 2000, 5000];
 const _tables = new Map();

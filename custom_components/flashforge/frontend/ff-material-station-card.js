@@ -9,19 +9,21 @@
  * card reads as "which filament is in which head" - the one thing the printer
  * reports and the print-start validation checks against.
  *
- * The card holds no state of its own. It bootstraps from the integration's
+ * The displayed spool state comes from the integration's
  * `flashforge/station` websocket command, which also names the entities that
  * carry the live state; from then on the card reads those entities, so what
  * it shows is what the coordinator last fetched. If the entities do not exist
  * yet (a capability reported after setup), the card re-asks the command until
- * they do.
+ * they do. The editor keeps an unsaved draft; saving calls the integration's
+ * set_slot_filament action and waits for the coordinator to report the result.
  *
  * Vanilla custom element, same rules as ff-job-card.js: no build step, copy in
  * translations, guarded registration for Home Assistant's custom element
  * registry swap.
  */
 
-const CARD_VERSION = "1.6.5";
+const CARD_VERSION = "1.6.6";
+const MATERIAL_TYPES = ["PLA", "PLA+", "PETG", "ABS", "ASA", "TPU", "PA", "PC", "PVA", "HIPS"];
 
 console.info(
   `%c FLASHFORGE-MATERIAL-STATION-CARD %c ${CARD_VERSION} `,
@@ -169,7 +171,9 @@ const STYLES = `
   .spool {
     flex: 0 1 25%; min-width: 0; max-width: 25%; box-sizing: border-box;
     display: flex; flex-direction: column; padding: 0 2px; cursor: pointer;
+    border: 0; background: none; color: inherit; font: inherit; text-align: inherit;
   }
+  .spool:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
   .spool-holder {
     box-sizing: border-box; min-height: 105px; flex: 1; width: 100%;
     display: flex; position: relative; overflow: hidden;
@@ -241,6 +245,39 @@ const STYLES = `
     font-size: 0.95rem; text-align: center;
   }
 
+  .edit-backdrop {
+    position: fixed; inset: 0; z-index: 1000; display: flex;
+    align-items: center; justify-content: center; padding: 16px;
+    background: rgba(0, 0, 0, .68);
+  }
+  .edit-dialog {
+    box-sizing: border-box; width: min(100%, 390px); max-height: calc(100vh - 32px);
+    overflow-y: auto; padding: 20px; border-radius: 12px;
+    background: var(--card-background-color, #fff); color: var(--primary-text-color);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .35);
+  }
+  .edit-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .edit-heading h2 { margin: 0; font-size: 1.2rem; }
+  .edit-close { border: 0; background: none; color: inherit; cursor: pointer; font-size: 1.5rem; }
+  .edit-field { display: block; margin-top: 16px; font-size: .9rem; }
+  .edit-field select, .edit-field input[type="text"] {
+    box-sizing: border-box; display: block; width: 100%; margin-top: 6px; padding: 9px;
+    border: 1px solid var(--divider-color, #888); border-radius: 6px;
+    background: var(--card-background-color, #fff); color: var(--primary-text-color);
+    font: inherit;
+  }
+  .edit-color { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .edit-color input { width: 58px; height: 42px; padding: 2px; cursor: pointer; }
+  .edit-note { margin: 14px 0 0; color: var(--secondary-text-color); font-size: .82rem; }
+  .edit-error { color: var(--error-color, #d32f2f); margin: 12px 0 0; }
+  .edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+  .edit-actions button {
+    padding: 9px 14px; border: 0; border-radius: 6px; cursor: pointer;
+    background: var(--secondary-background-color); color: var(--primary-text-color);
+  }
+  .edit-actions .save { background: var(--primary-color, #03a9f4); color: white; }
+  .edit-actions button:disabled { opacity: .5; cursor: not-allowed; }
+
   @keyframes station-pulse {
     0% { box-shadow: 0 0 0 0 rgba(5, 173, 66, 0.45); }
     70% { box-shadow: 0 0 0 7px rgba(5, 173, 66, 0); }
@@ -285,6 +322,10 @@ class FlashForgeMaterialStationCard extends HTMLElement {
     this._activeSlot = 0;
     this._online = null;
     this._pollTimer = null;
+    this._edit = null;
+    this._onEditKeyDown = (event) => {
+      if (event.key === "Escape" && this._edit && !this._edit.saving) this._closeEdit();
+    };
   }
 
   setConfig(config) {
@@ -292,6 +333,7 @@ class FlashForgeMaterialStationCard extends HTMLElement {
     this._config = config || {};
 
     if (this._hass && this._config.entry_id !== previousEntry) {
+      this._closeEdit();
       this._meta = null;
       this._loaded = false;
       this._slots = [];
@@ -327,9 +369,11 @@ class FlashForgeMaterialStationCard extends HTMLElement {
 
   disconnectedCallback() {
     this._stopPoll();
+    document.removeEventListener("keydown", this._onEditKeyDown);
   }
 
   connectedCallback() {
+    if (this._edit) document.addEventListener("keydown", this._onEditKeyDown);
     if (this._hass && this._config.entry_id && !this._entityIdsComplete()) {
       this._refresh();
     }
@@ -369,7 +413,7 @@ class FlashForgeMaterialStationCard extends HTMLElement {
     }
 
     this._syncFromEntities();
-    this._render();
+    if (!this._edit) this._render();
   }
 
   /**
@@ -383,7 +427,7 @@ class FlashForgeMaterialStationCard extends HTMLElement {
       return;
     }
     this._syncFromEntities();
-    this._render();
+    if (!this._edit) this._render();
   }
 
   _stopPoll() {
@@ -463,7 +507,7 @@ class FlashForgeMaterialStationCard extends HTMLElement {
     this._slots = slots;
     this._activeSlot = active;
     this._online = online;
-    this._render();
+    if (!this._edit) this._render();
   }
 
   /* -- rendering ---------------------------------------------------- */
@@ -496,12 +540,98 @@ class FlashForgeMaterialStationCard extends HTMLElement {
     }
 
     return `
-      <div class="spool${active}${emptyCls}${motion}" data-slot="${slot.slot_id}">
+      <button type="button" class="spool${active}${emptyCls}${motion}" data-slot="${slot.slot_id}"
+        aria-label="${esc(this._t("station_edit_slot", { slot: slot.slot_id }))}">
         ${graphic}
         ${this._config.show_type === false ? "" : `<div class="spool-info">
           <div class="spool-material" title="${esc(material)}">${esc(material)}</div>
         </div>`}
-      </div>`;
+      </button>`;
+  }
+
+  _openEdit(slotId) {
+    const entityId = this._meta?.entity_ids?.[`slot_${slotId}`];
+    if (!entityId) return;
+    const slot = this._slots.find((item) => item.slot_id === slotId);
+    const material = (slot?.material_name || "").trim().toUpperCase();
+    this._edit = {
+      slotId, entityId,
+      materialSelection: MATERIAL_TYPES.includes(material) ? material : "custom",
+      customMaterial: MATERIAL_TYPES.includes(material) ? "" : material,
+      color: /^#[0-9a-f]{6}$/i.test(slot?.material_color || "")
+        ? slot.material_color.slice(0, 7).toUpperCase() : "#808080",
+      saving: false, error: "",
+    };
+    document.addEventListener("keydown", this._onEditKeyDown);
+    this._render();
+    this._root.getElementById("edit-material")?.focus();
+  }
+
+  _closeEdit() {
+    this._edit = null;
+    document.removeEventListener("keydown", this._onEditKeyDown);
+    if (this._root) this._render();
+  }
+
+  async _saveEdit() {
+    const edit = this._edit;
+    if (!edit || edit.saving) return;
+    const material = edit.materialSelection === "custom"
+      ? edit.customMaterial.trim() : edit.materialSelection;
+    if (!material) {
+      edit.error = this._t("station_material_required");
+      this._render();
+      return;
+    }
+    edit.saving = true;
+    edit.error = "";
+    this._render();
+    try {
+      await this._hass.callService("flashforge", "set_slot_filament", {
+        entity_id: edit.entityId, slot: edit.slotId, material, color: edit.color,
+      });
+      if (this._edit === edit) this._closeEdit();
+    } catch (err) {
+      if (this._edit !== edit) return;
+      console.warn("ff-material-station-card: slot update failed", err);
+      edit.error = this._t("station_save_error");
+      edit.saving = false;
+      this._render();
+    }
+  }
+
+  _editMarkup() {
+    const edit = this._edit;
+    if (!edit) return "";
+    const custom = edit.materialSelection === "custom";
+    return `<div class="edit-backdrop" id="edit-backdrop">
+      <div class="edit-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+        <div class="edit-heading"><h2 id="edit-title">${esc(this._t("station_edit_slot", { slot: edit.slotId }))}</h2>
+          <button type="button" class="edit-close" id="edit-close" aria-label="${esc(this._t("station_close"))}" ${edit.saving ? "disabled" : ""}>×</button>
+        </div>
+        <form id="edit-form">
+          <label class="edit-field">${esc(this._t("station_material"))}
+            <select id="edit-material" ${edit.saving ? "disabled" : ""}>
+              ${MATERIAL_TYPES.map((value) => `<option value="${esc(value)}" ${edit.materialSelection === value ? "selected" : ""}>${esc(value)}</option>`).join("")}
+              <option value="custom" ${custom ? "selected" : ""}>${esc(this._t("station_other_material"))}</option>
+            </select>
+          </label>
+          ${custom ? `<label class="edit-field">${esc(this._t("station_custom_material"))}
+            <input id="edit-custom-material" type="text" maxlength="40" value="${esc(edit.customMaterial)}" ${edit.saving ? "disabled" : ""}>
+          </label>` : ""}
+          <label class="edit-field">${esc(this._t("station_color"))}
+            <span class="edit-color"><input id="edit-color" type="color" value="${esc(edit.color)}" ${edit.saving ? "disabled" : ""}>
+              <span id="edit-color-value">${esc(edit.color)}</span></span>
+          </label>
+          <p class="edit-note">${esc(this._t("station_edit_note"))}</p>
+          ${edit.error ? `<p class="edit-error" role="alert">${esc(edit.error)}</p>` : ""}
+          <div class="edit-actions">
+            <button type="button" id="edit-cancel" ${edit.saving ? "disabled" : ""}>${esc(this._t("station_cancel"))}</button>
+            <button type="submit" class="save" ${edit.saving || this._online === false ? "disabled" : ""}>${esc(this._t(edit.saving ? "station_saving" : "station_save"))}</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
   }
 
   _chipMarkup() {
@@ -550,24 +680,34 @@ class FlashForgeMaterialStationCard extends HTMLElement {
     }
     this._root.innerHTML = `
       <style>${STYLES}</style>
-      <ha-card>${this._bodyMarkup()}</ha-card>`;
+      <ha-card>${this._bodyMarkup()}${this._editMarkup()}</ha-card>`;
 
     this._root.querySelectorAll("[data-slot]").forEach((element) =>
-      element.addEventListener("click", () => {
-        const entityId =
-          this._meta && this._meta.entity_ids
-            ? this._meta.entity_ids[`slot_${element.dataset.slot}`]
-            : null;
-        if (!entityId) return;
-        this.dispatchEvent(
-          new CustomEvent("hass-more-info", {
-            detail: { entityId },
-            bubbles: true,
-            composed: true,
-          })
-        );
-      })
+      element.addEventListener("click", () => this._openEdit(Number(element.dataset.slot)))
     );
+    if (this._edit) {
+      this._root.getElementById("edit-backdrop").addEventListener("click", (event) => {
+        if (event.target.id === "edit-backdrop" && !this._edit.saving) this._closeEdit();
+      });
+      this._root.getElementById("edit-close").addEventListener("click", () => this._closeEdit());
+      this._root.getElementById("edit-cancel").addEventListener("click", () => this._closeEdit());
+      this._root.getElementById("edit-material").addEventListener("change", (event) => {
+        this._edit.materialSelection = event.target.value;
+        this._render();
+        if (event.target.value === "custom") this._root.getElementById("edit-custom-material")?.focus();
+      });
+      this._root.getElementById("edit-custom-material")?.addEventListener("input", (event) => {
+        this._edit.customMaterial = event.target.value;
+      });
+      this._root.getElementById("edit-color").addEventListener("input", (event) => {
+        this._edit.color = event.target.value.toUpperCase();
+        this._root.getElementById("edit-color-value").textContent = this._edit.color;
+      });
+      this._root.getElementById("edit-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        this._saveEdit();
+      });
+    }
   }
 }
 
