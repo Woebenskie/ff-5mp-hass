@@ -33,6 +33,7 @@ _LOGGER = logging.getLogger(__name__)
 URL_BASE = f"/{DOMAIN}_frontend"
 CARD_FILENAME = "ff-job-card.js"
 STATION_CARD_FILENAME = "ff-material-station-card.js"
+STATUS_CARD_FILENAME = "ff-print-status-card.js"
 
 _REGISTERED_KEY = f"{DOMAIN}_frontend_registered"
 
@@ -42,7 +43,7 @@ _NOTIFICATION_ID = f"{DOMAIN}_card_refresh"
 
 
 async def async_register_frontend(hass: HomeAssistant, version: str) -> None:
-    """Serve the card and register it with the frontend, once per run.
+    """Serve the cards and register them with the frontend, once per run.
 
     ``version`` is appended to the module URL so an integration update is not
     served from the browser's cache; it is the manifest version, which every
@@ -59,7 +60,7 @@ async def async_register_frontend(hass: HomeAssistant, version: str) -> None:
         from homeassistant.components import frontend
     except ImportError:  # pragma: no cover - frontend is present in any real install
         _LOGGER.warning(
-            "The frontend integration is unavailable, so the FlashForge job card "
+            "The frontend integration is unavailable, so the FlashForge cards "
             "will not be registered"
         )
         return
@@ -89,6 +90,9 @@ async def async_register_frontend(hass: HomeAssistant, version: str) -> None:
     frontend.add_extra_js_url(hass, f"{URL_BASE}/{CARD_FILENAME}?v={version}")
     frontend.add_extra_js_url(
         hass, f"{URL_BASE}/{STATION_CARD_FILENAME}?v={version}"
+    )
+    frontend.add_extra_js_url(
+        hass, f"{URL_BASE}/{STATUS_CARD_FILENAME}?v={version}"
     )
     _LOGGER.debug("Registered the FlashForge cards (version %s)", version)
 

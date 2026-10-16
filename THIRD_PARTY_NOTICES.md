@@ -1,12 +1,18 @@
 # Third-party notices
 
-## Bambu Lab Cards vector spool
+## Bambu Lab Cards vector spool and simple print status layout
 
 The vector spool styling and active spool animation in
 `custom_components/flashforge/frontend/ff-material-station-card.js` are adapted
 from [ha-bambulab-cards](https://github.com/greghesp/ha-bambulab-cards),
 revision `fa27f6044cb7c3a4d7fa521bc7d6850e1889a38c`. Its `package.json`
 declares the ISC license. The original card is by Greg Hesp and contributors.
+
+The simple-screen layout in
+`custom_components/flashforge/frontend/ff-print-status-card.js` is adapted from
+the same project's `src/cards/print-status-card/a1-screen/` at that revision.
+Its controls and readings are implemented against FlashForge Home Assistant
+entities.
 
 Copyright (c) Greg Hesp and contributors
 

@@ -9,6 +9,7 @@ large for entity attributes, and thumbnails are not expressible as state at all.
 
     flashforge/files/list      list the files on the printer, plus the slots
     flashforge/station         Material Station state plus its entity ids
+    flashforge/status          print status card entity ids
     flashforge/file/thumbnail  one file's thumbnail, base64 PNG
     flashforge/job/prepare     what starting this file would involve
     flashforge/job/start       start it
@@ -85,6 +86,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_list_entries)
     websocket_api.async_register_command(hass, ws_list_files)
     websocket_api.async_register_command(hass, ws_station)
+    websocket_api.async_register_command(hass, ws_status)
     websocket_api.async_register_command(hass, ws_file_thumbnail)
     websocket_api.async_register_command(hass, ws_prepare_job)
     websocket_api.async_register_command(hass, ws_start_job)
@@ -244,6 +246,60 @@ def ws_station(
             # None while the platform has not created the entity yet (a
             # capability reported after setup); the card then re-asks until it
             # can track live state.
+            "entity_ids": entity_ids,
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "flashforge/status",
+        vol.Required("entry_id"): str,
+    }
+)
+@callback
+def ws_status(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Resolve live entity IDs for the print status card.
+
+    Entity IDs can be renamed in Home Assistant, so the card must not guess
+    them from the printer's display name. It reads current values from hass.states.
+    """
+    data = _entry_data(hass, msg["entry_id"])
+    if data is None:
+        connection.send_error(
+            msg["id"], ERR_ENTRY_NOT_FOUND, "That FlashForge printer is not set up."
+        )
+        return
+
+    registry = er.async_get(hass)
+    entry_id: str = msg["entry_id"]
+    keys = {
+        "sensor": (
+            "machine_status", "print_progress", "remaining_time", "current_file",
+            "current_layer", "total_layers", "nozzle_temperature",
+            "nozzle_target_temperature", "bed_temperature", "bed_target_temperature",
+            "print_speed", "cooling_fan_speed",
+        ),
+        "binary_sensor": ("is_online", "is_printing", "is_paused"),
+        "switch": ("led",),
+        "button": ("pause_print", "resume_print", "cancel_print"),
+        "image": ("thumbnail",),
+        "camera": ("camera",),
+    }
+    entity_ids = {
+        key: registry.async_get_entity_id(platform, DOMAIN, f"{entry_id}_{key}")
+        for platform, platform_keys in keys.items()
+        for key in platform_keys
+    }
+    connection.send_result(
+        msg["id"],
+        {
+            "printer_name": data["name"],
+            "model": data["coordinator"].device_model,
             "entity_ids": entity_ids,
         },
     )

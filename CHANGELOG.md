@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.5] - 2026-10-16
+
+### Added
+
+- Add a FlashForge Print Status dashboard card with a Bambu-style simple screen.
+  It shows the print thumbnail, progress, layers, remaining time, temperatures,
+  speed and fan, plus LED, pause/resume, cancel and camera controls. It resolves
+  entity IDs from the Home Assistant registry through `flashforge/status`, so
+  renamed entities continue to work. The card is bundled with the integration.
+
+### Testing
+
+- Cover status-card entity resolution, frontend registration, card versioning,
+  and translation usage with unit tests. Visual layout and controls still need
+  confirmation on a real Home Assistant dashboard and printer.
+
 ## [1.6.4] - 2026-10-15
 
 ### Changed

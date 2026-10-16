@@ -21,7 +21,7 @@
  * registry swap.
  */
 
-const CARD_VERSION = "1.6.4";
+const CARD_VERSION = "1.6.5";
 
 console.info(
   `%c FLASHFORGE-MATERIAL-STATION-CARD %c ${CARD_VERSION} `,

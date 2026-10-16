@@ -26,9 +26,10 @@ COMPONENT = Path(__file__).parents[2] / "custom_components" / "flashforge"
 CARD_FILES = [
     COMPONENT / "frontend" / "ff-job-card.js",
     COMPONENT / "frontend" / "ff-material-station-card.js",
+    COMPONENT / "frontend" / "ff-print-status-card.js",
 ]
 
-CARD_IDS = ["job", "material-station"]
+CARD_IDS = ["job", "material-station", "print-status"]
 
 
 @pytest.mark.parametrize("source", CARD_FILES, ids=CARD_IDS)

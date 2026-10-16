@@ -36,12 +36,12 @@
   </tr>
   <tr>
     <td rowspan="4"><b>Monitoring</b></td>
-    <td>28 Sensors</td>
+    <td>38 Sensors</td>
     <td>Real-time temperatures (per-toolhead on the Creator 5 series, plus a heated chamber), print progress, filament tracking, fan speeds, air quality (5M Pro / Creator 5 Pro TVOC), active Material Station slot, print completion time, lifetime statistics, and diagnostics</td>
   </tr>
   <tr>
-    <td>4 Binary Sensors</td>
-    <td>Printing status, connectivity, error detection, pause state</td>
+    <td>5 Binary Sensors</td>
+    <td>Printing status, connectivity, error detection, pause state, and door state on supported models</td>
   </tr>
   <tr>
     <td>Live Camera Feed</td>
@@ -52,7 +52,7 @@
     <td>Active g-code thumbnail, plus 4 Material Station slot color swatches (AD5X / Creator 5 series — filament color + material label)</td>
   </tr>
   <tr>
-    <td rowspan="3"><b>Control</b></td>
+    <td rowspan="6"><b>Control &amp; Cards</b></td>
     <td>Switches</td>
     <td>LED control, plus Pro-only camera power toggle</td>
   </tr>
@@ -67,6 +67,14 @@
   <tr>
     <td>Print Job Card</td>
     <td>Start a file from the printer's list, or upload a sliced 3MF. Match each tool to a Material Station slot (AD5X / Creator 5 series), then start the print. The card installs with the integration.</td>
+  </tr>
+  <tr>
+    <td>Material Station Card</td>
+    <td>Four colored spools with material labels and an animated active slot marker. The card installs with the integration.</td>
+  </tr>
+  <tr>
+    <td>Print Status Card</td>
+    <td>Simple screen with the current thumbnail, progress, remaining time, temperatures, speed, fan, and print controls. The card installs with the integration.</td>
   </tr>
   <tr>
     <td rowspan="4"><b>Architecture</b></td>
@@ -417,6 +425,27 @@ spool_anim_reflection: true
 After installing or updating the integration, restart Home Assistant and
 reload the dashboard page once so the new card appears in the picker.
 
+### Print status dashboard card
+
+The **FlashForge Print Status** card uses a simple screen layout inspired by
+the Bambu Lab print status card. It shows the current print thumbnail and file,
+progress, layer and remaining time, nozzle and bed temperatures, print speed,
+and cooling fan speed. Its controls open the camera and file entity details,
+toggle the LED, and pause, resume or cancel a print. Cancel asks for confirmation.
+The card reads the integration's entities, so entity renames in Home Assistant
+are supported. Printer features that have no FlashForge equivalent are not shown.
+
+Add it through the dashboard card picker, or use YAML:
+
+```yaml
+type: custom:ff-print-status-card
+entry_id: YOUR_FLASHFORGE_CONFIG_ENTRY_ID
+style: simple
+```
+
+Update the integration and restart Home Assistant before adding the card. Reload
+any dashboard tab that was already open so it loads the new card module.
+
 ### Change a slot's material and color
 
 On an AD5X, Creator 5 or Creator 5 Pro, open **Developer Tools → Actions** and
@@ -443,7 +472,7 @@ data:
   <h2>Languages</h2>
 </div>
 
-The integration and the job card both follow the language set in your Home Assistant profile — there is nothing to configure.
+The integration and dashboard cards follow the language set in your Home Assistant profile — there is nothing to configure.
 
 | Language | Integration | Job card |
 |----------|-------------|----------|

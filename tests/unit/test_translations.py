@@ -140,12 +140,16 @@ def test_card_strings_are_all_used() -> None:
     Cheap protection against copy that outlives the UI it belonged to, and
     against a key renamed in the JS but not in the JSON - which renders empty
     rather than failing. Keys are namespaced per card: ``station_`` keys belong
-    to ff-material-station-card.js, everything else to ff-job-card.js.
+    to ff-material-station-card.js, ``status_`` keys to ff-print-status-card.js,
+    and everything else to ff-job-card.js.
     """
     sources = {
         "job": (COMPONENT / "frontend" / "ff-job-card.js").read_text(encoding="utf-8"),
         "station": (
             COMPONENT / "frontend" / "ff-material-station-card.js"
+        ).read_text(encoding="utf-8"),
+        "status": (
+            COMPONENT / "frontend" / "ff-print-status-card.js"
         ).read_text(encoding="utf-8"),
     }
 
@@ -163,7 +167,11 @@ def test_card_strings_are_all_used() -> None:
 
     for key in _load(CARD_TRANSLATIONS / "en.json"):
         base = re.sub(r"_(one|other)$", "", key)
-        owner = "station" if base.startswith("station_") else "job"
+        owner = (
+            "station" if base.startswith("station_")
+            else "status" if base.startswith("status_")
+            else "job"
+        )
         assert base in used[owner] or key in used[owner], (
             f"{key} is not used by its card ({owner})"
         )

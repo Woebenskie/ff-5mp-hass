@@ -35,8 +35,12 @@ FRONTEND = (
     / "frontend"
 )
 
-CARD_FILES = [FRONTEND / "ff-job-card.js", FRONTEND / "ff-material-station-card.js"]
-CARD_IDS = ["job", "material-station"]
+CARD_FILES = [
+    FRONTEND / "ff-job-card.js",
+    FRONTEND / "ff-material-station-card.js",
+    FRONTEND / "ff-print-status-card.js",
+]
+CARD_IDS = ["job", "material-station", "print-status"]
 
 
 @pytest.mark.parametrize("card", CARD_FILES, ids=CARD_IDS)

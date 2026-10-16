@@ -30,6 +30,7 @@ from custom_components.flashforge.websocket import (
     ws_list_files,
     ws_prepare_job,
     ws_start_job,
+    ws_status,
     ws_station,
 )
 
@@ -324,6 +325,41 @@ class TestStation:
         ws_station(hass, connection, {"id": 1, "entry_id": "nope"})
 
         connection.send_error.assert_called_once()
+        assert connection.send_error.call_args.args[1] == "entry_not_found"
+
+
+@pytest.mark.unit
+class TestStatus:
+    """The print status card resolves entity IDs without guessing a name slug."""
+
+    def test_resolves_registered_entities(self):
+        hass, _, _ = make_hass()
+        connection = make_connection()
+        registry = Mock()
+        registry.async_get_entity_id.side_effect = (
+            lambda platform, domain, unique: f"{platform}.renamed_{unique}"
+        )
+
+        with patch("custom_components.flashforge.websocket.er") as er_mock:
+            er_mock.async_get.return_value = registry
+            ws_status(hass, connection, {"id": 1, "entry_id": ENTRY_ID})
+
+        payload = result_of(connection)
+        assert payload["printer_name"] == "Workshop AD5X"
+        assert payload["entity_ids"]["machine_status"] == (
+            "sensor.renamed_entry-1_machine_status"
+        )
+        assert payload["entity_ids"]["thumbnail"] == "image.renamed_entry-1_thumbnail"
+        assert payload["entity_ids"]["pause_print"] == (
+            "button.renamed_entry-1_pause_print"
+        )
+
+    def test_unknown_entry_errors(self):
+        hass, _, _ = make_hass()
+        connection = make_connection()
+
+        ws_status(hass, connection, {"id": 1, "entry_id": "missing"})
+
         assert connection.send_error.call_args.args[1] == "entry_not_found"
 
 
