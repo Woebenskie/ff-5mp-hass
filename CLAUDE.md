@@ -3,7 +3,7 @@
 Guidance for AI coding assistants working in this repository.
 
 ## Current State (October 2026)
-- Integration **version 1.6.6** (CHANGELOG dated 2026-10-16). Releases fire on a `v*` tag push — `.github/workflows/release.yml` extracts the matching `## [X.Y.Z]` CHANGELOG section for the notes, so the section must exist before the tag is pushed.
+- Integration **version 1.6.7** (CHANGELOG dated 2026-10-16). Releases fire on a `v*` tag push — `.github/workflows/release.yml` extracts the matching `## [X.Y.Z]` CHANGELOG section for the notes, so the section must exist before the tag is pushed.
 - **1.6.0 adds the 3MF upload (`upload.py`), and it is NOT yet tested on real hardware.** A Creator 5 owner will test it. Treat the per-model upload dispatch as unconfirmed until that report arrives.
 - Ships three **Lovelace cards**: `frontend/ff-job-card.js` for starting prints with material matching, `frontend/ff-material-station-card.js` for four colored slots with an animated active-slot marker and click-to-edit spool popup, and `frontend/ff-print-status-card.js` for the simple print status screen. All are served and registered by the integration itself — no separate HACS entry or Lovelace resource step. The `flashforge.set_slot_filament` action changes slot material and color metadata over HTTP, including edits from the card.
 - **Languages: English + German**, for the integration (`translations/`) and independently for the card (`frontend/translations/`). Both follow the user's HA profile language. German contributed by @RedAces in PR #19.

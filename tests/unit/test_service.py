@@ -7,7 +7,8 @@ validation, target resolution through the entity/device registries, and what
 happens when the printer refuses.
 
 The service schema is Home Assistant's to apply, so these tests call the handler
-body directly with fully-formed service calls, like the websocket tests.
+with fully-formed service calls, including the Home Assistant reference carried
+by ServiceCall. Registration is exercised through its one-argument callback.
 """
 import sys
 from contextlib import ExitStack
@@ -61,10 +62,11 @@ def make_hass(entries=((ENTRY_ID, "Workshop C5"),), *, accepts=True):
     return hass, clients, coordinators
 
 
-def make_call(*, slot=2, material="PETG", color="#4CAAF8", **targets):
+def make_call(hass, *, slot=2, material="PETG", color="#4CAAF8", **targets):
     data = {"slot": slot, "material": material, "color": color, **targets}
     call = Mock()
     call.data = data
+    call.hass = hass
     return call
 
 
@@ -112,7 +114,7 @@ class TestSetSlotFilament:
 
         with patch_registries(entries={"image.c5_material_station_slot_1": entry}):
             await async_set_slot_filament(
-                hass, make_call(entity_id=["image.c5_material_station_slot_1"])
+                make_call(hass, entity_id=["image.c5_material_station_slot_1"])
             )
 
         clients[ENTRY_ID].control.configure_slot.assert_awaited_once_with(
@@ -127,7 +129,7 @@ class TestSetSlotFilament:
         entry = Mock(config_entry_id=ENTRY_ID)
         with patch_registries(entries={"image.slot": entry}):
             await async_set_slot_filament(
-                hass, make_call(entity_id="image.slot", color=[76, 170, 248])
+                make_call(hass, entity_id="image.slot", color=[76, 170, 248])
             )
         clients[ENTRY_ID].control.configure_slot.assert_awaited_once_with(
             2, "PETG", "#4CAAF8"
@@ -142,7 +144,7 @@ class TestSetSlotFilament:
         device = Mock(config_entries=[ENTRY_ID, ENTRY_ID_2])
 
         with patch_registries(devices={"dev-1": device}):
-            await async_set_slot_filament(hass, make_call(device_id=["dev-1"]))
+            await async_set_slot_filament(make_call(hass, device_id=["dev-1"]))
 
         for entry_id in (ENTRY_ID, ENTRY_ID_2):
             clients[entry_id].control.configure_slot.assert_awaited_once()
@@ -170,7 +172,7 @@ class TestSetSlotFilament:
         """
         hass, _, _ = make_hass()
         with pytest.raises(ServiceValidationError, match=message_part):
-            await async_set_slot_filament(hass, make_call(**overrides))
+            await async_set_slot_filament(make_call(hass, **overrides))
 
     @pytest.mark.asyncio
     async def test_refuses_when_no_target_matches(self):
@@ -181,7 +183,7 @@ class TestSetSlotFilament:
             patch_registries(),
             pytest.raises(ServiceValidationError, match="No FlashForge printer"),
         ):
-            await async_set_slot_filament(hass, make_call(entity_id=["image.other_x"]))
+            await async_set_slot_filament(make_call(hass, entity_id=["image.other_x"]))
 
     @pytest.mark.asyncio
     async def test_refuses_target_from_unloaded_entry(self):
@@ -191,7 +193,7 @@ class TestSetSlotFilament:
             patch_registries(entries={"image.other": entry}),
             pytest.raises(ServiceValidationError, match="No FlashForge printer"),
         ):
-            await async_set_slot_filament(hass, make_call(entity_id="image.other"))
+            await async_set_slot_filament(make_call(hass, entity_id="image.other"))
 
     @pytest.mark.asyncio
     async def test_reports_when_the_printer_refuses(self):
@@ -204,7 +206,7 @@ class TestSetSlotFilament:
             pytest.raises(HomeAssistantError, match="did not accept"),
         ):
             await async_set_slot_filament(
-                hass, make_call(entity_id=["image.c5_material_station_slot_1"])
+                make_call(hass, entity_id=["image.c5_material_station_slot_1"])
             )
 
 
@@ -224,3 +226,19 @@ class TestServiceRegistration:
             async_set_slot_filament,
             schema=SET_SLOT_FILAMENT_SCHEMA,
         )
+
+    @pytest.mark.asyncio
+    async def test_registered_handler_accepts_home_assistant_service_call(self):
+        """Home Assistant invokes a service handler with one ServiceCall argument."""
+        hass, clients, coordinators = make_hass()
+        entry = Mock(config_entry_id=ENTRY_ID)
+        async_register_services(hass)
+        handler = hass.services.async_register.call_args.args[2]
+
+        with patch_registries(entries={"image.slot": entry}):
+            await handler(make_call(hass, entity_id="image.slot"))
+
+        clients[ENTRY_ID].control.configure_slot.assert_awaited_once_with(
+            2, "PETG", "#4CAAF8"
+        )
+        coordinators[ENTRY_ID].async_request_refresh.assert_awaited_once()

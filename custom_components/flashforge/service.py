@@ -108,15 +108,14 @@ def _resolve_entry_ids(hass: HomeAssistant, service_data: dict[str, Any]) -> set
     return entry_ids
 
 
-async def async_set_slot_filament(
-    hass: HomeAssistant, call: Any
-) -> None:
+async def async_set_slot_filament(call: Any) -> None:
     """Set a Material Station slot's filament name and color.
 
     Metadata only: the printer displays it and validates prints against it, it
     does not move or load filament. Available on the AD5X and the Creator 5
     series; other models refuse the command.
     """
+    hass: HomeAssistant = call.hass
     slot: int = call.data["slot"]
     material: str = str(call.data["material"]).strip()
     color = _normalize_color(call.data["color"])

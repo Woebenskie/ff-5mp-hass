@@ -22,7 +22,7 @@
  * registry swap.
  */
 
-const CARD_VERSION = "1.6.6";
+const CARD_VERSION = "1.6.7";
 const MATERIAL_TYPES = ["PLA", "PLA+", "PETG", "ABS", "ASA", "TPU", "PA", "PC", "PVA", "HIPS"];
 
 console.info(

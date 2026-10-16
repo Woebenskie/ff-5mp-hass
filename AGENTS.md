@@ -4,7 +4,7 @@ Working agreement for AI assistants contributing to `ff-5mp-hass`.
 
 ## Project Snapshot
 - **Integration:** FlashForge printers for Home Assistant (HTTP API only).
-- **Current version:** `1.6.6` (CHANGELOG dated 2026-10-16). The 1.6.0 3MF upload, 1.6.2 slot-configuration action, 1.6.3 Material Station card, 1.6.5 print status card, and 1.6.6 spool editor are **not yet tested on real hardware**.
+- **Current version:** `1.6.7` (CHANGELOG dated 2026-10-16). The 1.6.0 3MF upload, 1.6.2 slot-configuration action, 1.6.3 Material Station card, 1.6.5 print status card, and 1.6.6 spool editor are **not yet tested on real hardware**. Version 1.6.7 fixes the slot action's Home Assistant handler signature after a real action call exposed it.
 - **Supported printers:** `AD5X`, `Adventurer 5M`, `Adventurer 5M Pro`, `Creator 5`, and `Creator 5 Pro` only.
 - **Entities shipped:** 56 total (38 sensors, 5 binary sensors, 2 switches (the camera switch is not created on the Creator 5 series), 1 select, 4 buttons, 1 camera, 5 images — the g-code thumbnail plus 4 Material Station slot color swatches).
 - **Key dependency:** `flashforge-python-api>=1.6.0` (see sibling repo `ff-5mp-api-py`). The 1.6.0 floor is load-bearing: it adds the 3MF reader (`flashforge.threemf.parse_3mf`) the upload uses, and it makes uploads open files off the event loop and stop hitting aiohttp's 5-minute total timeout — see `CLAUDE.md`.

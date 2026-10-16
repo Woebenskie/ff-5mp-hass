@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.7] - 2026-10-16
+
+### Fixed
+
+- Fix `flashforge.set_slot_filament` failing with a missing `call` argument.
+  Home Assistant passes one `ServiceCall` to registered action handlers; the
+  handler now reads `hass` from that call. This repairs both Developer Tools
+  actions and saves from the Material Station spool editor.
+
+### Testing
+
+- Add a regression test that invokes the registered handler with one argument
+  and verifies the printer command and coordinator refresh.
+
 ## [1.6.6] - 2026-10-16
 
 ### Added
